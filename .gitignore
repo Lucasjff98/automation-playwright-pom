@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+artifacts/
+output/
+.pytest_cache/
+.vscode/
