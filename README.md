@@ -1,3 +1,5 @@
+   ![CI](https://github.com/Lucasjff98/automation-playwright-pom/actions/workflows/ci.yml/badge.svg)
+   
 # Web Automation & Data Extraction Engine
 
 A web automation and data-extraction pipeline built with **Python**, **Playwright**, and the **Page Object Model (POM)** design pattern. Demonstrates resilient element selection, dynamic pagination, Pydantic-validated output, and fault-tolerant execution trace auditing (target site: [quotes.toscrape.com](https://quotes.toscrape.com/), a public scraping sandbox).
