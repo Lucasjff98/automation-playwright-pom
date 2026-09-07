@@ -1,36 +1,42 @@
 import argparse
 import json
 import os
-from playwright.sync_api import sync_playwright
-from src.pages.quotes_page import QuotesPage
+
+from src.db.database import init_db, save_quotes
+from src.scraper.runner import run_scraper
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Pipeline de automação/extração de dados com Playwright."
+        description="Automation/data-extraction pipeline powered by Playwright."
     )
     parser.add_argument(
         "--headless",
         action="store_true",
-        help="Roda o navegador em modo headless (sem interface gráfica).",
+        help="Run the browser in headless mode (no GUI).",
     )
     parser.add_argument(
         "--max-pages",
         type=int,
         default=3,
-        help="Número máximo de páginas a percorrer (padrão: 3).",
+        help="Maximum number of pages to walk through (default: 3).",
     )
     parser.add_argument(
         "--output",
         type=str,
         default="output/quotes.json",
-        help="Caminho do arquivo JSON de saída (padrão: output/quotes.json).",
+        help="Path to the output JSON file (default: output/quotes.json).",
     )
     parser.add_argument(
         "--slow-mo",
         type=int,
         default=0,
-        help="Atraso em ms entre ações do Playwright, útil para debug visual (padrão: 0).",
+        help="Delay in ms between Playwright actions, useful for visual debugging (default: 0).",
+    )
+    parser.add_argument(
+        "--no-db",
+        action="store_true",
+        help="Skip saving results to the database (JSON output only).",
     )
     return parser.parse_args()
 
@@ -39,55 +45,26 @@ def main() -> None:
     args = parse_args()
     print("🚀 Starting Web Automation Pipeline...")
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=args.headless, slow_mo=args.slow_mo)
-        context = browser.new_context()
-        context.tracing.start(screenshots=True, snapshots=True, sources=True)
+    print("🌐 Running scraper...")
+    quotes = run_scraper(
+        headless=args.headless,
+        max_pages=args.max_pages,
+        slow_mo=args.slow_mo,
+    )
+    print(f"   -> {len(quotes)} quotes extracted in total.")
 
-        page = context.new_page()
-        quotes_page = QuotesPage(page)
+    output_dir = os.path.dirname(args.output) or "."
+    os.makedirs(output_dir, exist_ok=True)
+    with open(args.output, "w", encoding="utf-8") as f:
+        json.dump([q.model_dump() for q in quotes], f, ensure_ascii=False, indent=2)
+    print(f"📄 JSON output written to {args.output}")
 
-        all_quotes = []
+    if not args.no_db:
+        init_db()
+        saved = save_quotes(quotes)
+        print(f"💾 {saved} new records saved to the database.")
 
-        try:
-            print("🌐 Navigating to target website...")
-            quotes_page.navigate()
-
-            page_count = 1
-            while True:
-                print(f"📄 Scraping data from page {page_count}...")
-                quotes = quotes_page.scrape_current_page_quotes()
-                all_quotes.extend(quotes)
-                print(f"   -> {len(quotes)} quotes extracted from current page.")
-
-                if quotes_page.has_next_page() and page_count < args.max_pages:
-                    print("➡️ Navigating to next page...")
-                    quotes_page.go_to_next_page()
-                    page_count += 1
-                else:
-                    break
-
-            output_dir = os.path.dirname(args.output) or "."
-            os.makedirs(output_dir, exist_ok=True)
-            with open(args.output, "w", encoding="utf-8") as f:
-                json.dump(
-                    [q.model_dump() for q in all_quotes],
-                    f,
-                    ensure_ascii=False,
-                    indent=2,
-                )
-
-            print(
-                f"✅ Pipeline completed successfully! Total records saved: {len(all_quotes)}"
-            )
-
-        except Exception as e:
-            print(f"❌ Execution error: {e}")
-        finally:
-            os.makedirs("artifacts", exist_ok=True)
-            context.tracing.stop(path="artifacts/trace.zip")
-            browser.close()
-            print("🔒 Browser closed. Trace artifacts saved to artifacts/trace.zip")
+    print("✅ Pipeline completed successfully!")
 
 
 if __name__ == "__main__":

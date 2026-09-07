@@ -5,3 +5,4 @@ artifacts/
 output/
 .pytest_cache/
 .vscode/
+*.db
