@@ -1,4 +1,4 @@
-![CI](https://github.com/Lucasjff98/automation-playwright-pom/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/Lucasjff98/playwright-scraper-api/actions/workflows/ci.yml/badge.svg)
 
 # Web Automation & Data Extraction API
 
