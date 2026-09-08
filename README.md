@@ -20,7 +20,7 @@ A web automation and data-extraction pipeline built with **Python**, **Playwrigh
 ## 🏗️ Architecture
 
 ```text
-automation-playwright-pom/
+playwright-scraper-api/
 ├── src/
 │   ├── pages/
 │   │   ├── base_page.py      # Core browser actions, waits & trace artifacts
