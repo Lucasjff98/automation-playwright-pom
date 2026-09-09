@@ -1,7 +1,9 @@
 from typing import List
+
 from playwright.sync_api import Page
-from src.pages.base_page import BasePage
+
 from src.models import Quote
+from src.pages.base_page import BasePage
 
 
 class QuotesPage(BasePage):
@@ -21,27 +23,33 @@ class QuotesPage(BasePage):
         self.wait_for_quotes_to_load()
 
     def wait_for_quotes_to_load(self, timeout: int = 5000) -> None:
-        """Garante que os cards de citação da página atual já renderizaram
-        antes de tentar extrair dados — evita raspar uma página ainda vazia
-        logo após uma navegação/paginação."""
-        self.page.wait_for_selector(self.QUOTE_CARD, state="visible", timeout=timeout)
+        """Ensures the current page's quote cards have rendered before we
+        try to extract data — avoids scraping an empty page right after a
+        navigation/pagination action.
+        """
+        self.page.locator(self.QUOTE_CARD).first.wait_for(state="visible", timeout=timeout)
 
     def scrape_current_page_quotes(self) -> List[Quote]:
+        """Extract every quote on the current page using the Locator API.
+
+        Locators re-query the DOM on every action and auto-wait for the
+        element to be actionable, which makes this far less prone to
+        flakiness than caching element handles from `query_selector`.
+        """
         quotes_data = []
-        cards = self.page.query_selector_all(self.QUOTE_CARD)
+        cards = self.page.locator(self.QUOTE_CARD)
+        count = cards.count()
 
-        for card in cards:
-            text_el = card.query_selector(self.TEXT)
-            author_el = card.query_selector(self.AUTHOR)
+        for i in range(count):
+            card = cards.nth(i)
+            text = card.locator(self.TEXT).inner_text()
+            author = card.locator(self.AUTHOR).inner_text()
+            quotes_data.append(Quote(quote=text, author=author))
 
-            if text_el and author_el:
-                quotes_data.append(
-                    Quote(quote=text_el.inner_text(), author=author_el.inner_text())
-                )
         return quotes_data
 
     def has_next_page(self) -> bool:
-        return self.page.is_visible(self.NEXT_BUTTON)
+        return self.page.locator(self.NEXT_BUTTON).is_visible()
 
     def go_to_next_page(self) -> None:
         self.safe_click(self.NEXT_BUTTON)

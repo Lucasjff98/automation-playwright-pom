@@ -82,3 +82,9 @@ Then open `http://127.0.0.1:8000/docs` for interactive API documentation.
 pytest -m "not integration"   # unit tests (models + API), fast, no browser
 pytest -m integration         # integration tests, needs `playwright install`
 ```
+
+## ⚠️ Known limitations
+
+- `POST /scrape` runs synchronously and blocks the request until scraping finishes. Fine for a portfolio demo; a production version would enqueue a job (e.g. Celery/RQ) and return a job ID instead.
+- Element interaction uses Playwright's Locator API (auto-waiting), but selectors are still simple CSS — a page redesign on the target site would require selector updates, same as any scraper.
+- Duplicate detection is exact-match on (quote, author); it won't catch near-duplicates from minor text variations.

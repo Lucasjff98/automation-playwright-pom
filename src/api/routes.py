@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
+from playwright.sync_api import Error as PlaywrightError
 
 from src.api.schemas import QuoteListResponse, QuoteResponse, ScrapeResponse
 from src.db import database
@@ -34,8 +35,20 @@ def trigger_scrape(max_pages: int = Query(default=3, ge=1, le=20)):
     Runs headless and blocks until finished — fine for a portfolio demo,
     but in a production setting this should be a background job instead
     of a request-blocking call.
+
+    If the scraper itself fails (target site unreachable, page structure
+    changed, browser crash, etc.), this returns a 502 instead of a
+    misleading 200 — the caller should never read "success" when nothing
+    was actually collected.
     """
-    quotes = run_scraper(headless=True, max_pages=max_pages)
+    try:
+        quotes = run_scraper(headless=True, max_pages=max_pages)
+    except PlaywrightError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Scraping failed: the target page could not be reached or parsed ({exc}).",
+        ) from exc
+
     saved = database.save_quotes(quotes)
 
     return ScrapeResponse(

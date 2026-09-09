@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from playwright.sync_api import Error as PlaywrightError
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -78,3 +79,23 @@ def test_get_quotes_filters_by_author(client):
     body = response.json()
     assert body["total"] == 1
     assert body["items"][0]["author"] == "Ada Lovelace"
+
+
+def test_scrape_returns_502_when_scraper_fails(client, monkeypatch):
+    """If the scraper can't reach or parse the target page, the API must
+    report a failure — never a 200 claiming quotes were collected when
+    none actually were.
+    """
+
+    def broken_scraper(*args, **kwargs):
+        raise PlaywrightError("Target page could not be reached")
+
+    monkeypatch.setattr("src.api.routes.run_scraper", broken_scraper)
+
+    response = client.post("/scrape")
+    assert response.status_code == 502
+    assert "could not be reached" in response.json()["detail"]
+
+    # And nothing should have been persisted as a side effect of the failure.
+    follow_up = client.get("/quotes")
+    assert follow_up.json()["total"] == 0
