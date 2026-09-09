@@ -1,4 +1,4 @@
-![CI](https://github.com/Lucasjff98/automation-playwright-pom/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/Lucasjff98/playwright-scraper-api/actions/workflows/ci.yml/badge.svg)
 
 # Web Automation & Data Extraction API
 
@@ -20,7 +20,7 @@ A web automation and data-extraction pipeline built with **Python**, **Playwrigh
 ## 🏗️ Architecture
 
 ```text
-automation-playwright-pom/
+playwright-scraper-api/
 ├── src/
 │   ├── pages/
 │   │   ├── base_page.py      # Core browser actions, waits & trace artifacts
