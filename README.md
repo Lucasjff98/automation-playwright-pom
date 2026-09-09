@@ -8,7 +8,7 @@ A web automation and data-extraction pipeline built with **Python**, **Playwrigh
 
 ## 🎯 What it does
 
-- Automates multi-page navigation and structured data extraction.
+- Automates multi-page navigation and structured data extraction using Playwright's Locator API, which auto-waits and re-queries the DOM on every action.
 - Waits explicitly for content before scraping (both on initial load and after pagination), instead of assuming the DOM is ready.
 - Validates every extracted record through a Pydantic model — the same model is reused for both the scraper's output and the API's schema, so both give the same guarantee.
 - Persists results in a SQLite database, skipping exact duplicates on re-runs.
@@ -73,7 +73,7 @@ uvicorn src.api.main:app --reload
 Then open `http://127.0.0.1:8000/docs` for interactive API documentation.
 
 - `GET /quotes` — list stored quotes, with optional `author` filter and pagination (`limit`, `offset`)
-- `POST /scrape` — run the scraper on demand and persist any new results
+- `POST /scrape` — run the scraper on demand and persist any new results. Returns `502` (instead of a misleading `200`) if the scraper itself fails — e.g. the target page is unreachable or its structure changed.
 - `GET /health` — health check
 
 ## ✅ Tests
